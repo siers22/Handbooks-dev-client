@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -60,13 +61,7 @@ export default function RegisterPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-br from-indigo-950 via-purple-900 to-indigo-900">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob" />
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
-        </div>
-      </div>
+      <AnimatedGradientBackground />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 overflow-hidden transform transition-all hover:scale-[1.02] duration-300">
