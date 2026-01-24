@@ -1,357 +1,390 @@
-// app/admin/courses/new/page.tsx  (или app/courses/create/page.tsx)
+// app/courses/create/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, ErrorInfo } from "react";
+import Link from "next/link";
+import { ArrowLeft, Upload, X, Save, BookOpen } from "lucide-react";
+import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import {
-  BookOpen,
-  ArrowRight,
-  X,
-  Upload,
-  Image as ImageIcon,
-} from "lucide-react";
+import { ErrorProps } from "next/error";
 
 export default function CreateCoursePage() {
   const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [slug, setSlug] = useState("");
-  const [price, setPrice] = useState("");
-  const [level, setLevel] = useState("beginner");
-  const [currency, setCurrency] = useState("USD");
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isSubmitting, {}] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    subtitle: "",
+    slug: "",
+    level: "beginner",
+    price: 0,
+    currency: "EUR",
+    description: "",
+    coverPreview: "" as string | null,
+    coverFile: null as File | null,
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setFormData((prev) => ({ ...prev, coverFile: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
+        setFormData((prev) => ({
+          ...prev,
+          coverPreview: reader.result as string,
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const validateForm = () => {
+    if (!formData.title.trim()) return "Название курса обязательно";
+    if (!formData.slug.trim()) return "Slug обязателен";
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(formData.slug))
+      return "Slug может содержать только строчные буквы, цифры и дефисы";
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setServerError(null);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setServerError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3001/courses/create", {
+      const payload = {
+        title: formData.title.trim(),
+        slug: formData.slug.trim(),
+        subtitle: formData.subtitle.trim() || undefined,
+        description: formData.description.trim() || undefined,
+        level: formData.level,
+        price: Number(formData.price),
+        currency: formData.currency,
+        coverUrl:
+          "https://i.pinimg.com/736x/da/d3/61/dad36114a80695d42f6aa2c064ecf8c1.jpg",
+      };
+
+      const res = await fetch("http://localhost:3001/courses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2MGZhMTc5LTViODktNGJiNi05NzFiLWMxZTBkZGM5MGVjNyIsImVtYWlsIjoiVXJzdWxhX1N0cm9zaW4yNUB5YWhvby5jb20iLCJyb2xlIjoiIiwidG9rZW5faWQiOiIzMjMwMzIzNjJkMzAzMTJkMzIzNDIwMzEzNjNhMzUzMzNhMzUzNzJlMzczMzMwMzIzOTM2MzUzNjM3MjAyYjMwMzUzMDMwMjAyYjMwMzUyMDZkM2QyYjM0MzcyZTMwMzczOTM0MzYzMDM5MzgzNzM4MzYzMDY2NjEzMTM3MzkyZDM1NjIzODM5MmQzNDYyNjIzNjJkMzkzNzMxNjIyZDYzMzE2NTMwNjQ2NDYzMzkzMDY1NjMzNyIsImlzcyI6ImhhbmRib29rcy1hcGkiLCJzdWIiOiI4NjBmYTE3OS01Yjg5LTRiYjYtOTcxYi1jMWUwZGRjOTBlYzciLCJleHAiOjE3NjkzNDIwMzcsImlhdCI6MTc2OTI1NTYzN30.yjE8fuY7OLGmQxFoiZma5UjWlNzkV0mPPZgsc_nHOeM`,
         },
-        body: JSON.stringify({
-          title,
-          description,
-          slug,
-          price,
-          currency,
-          level,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Ошибка при регистрации");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            errorData.error ||
+            `Ошибка ${res.status}: Не удалось создать курс`,
+        );
       }
 
-      router.push("/auth/login");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Что-то пошло не так...");
+      const response = await res.json();
+      const createdCourse = response?.data; // или response?.data?.course
+      if (createdCourse?.Slug || createdCourse?.ID) {
+        router.push(`/courses/${createdCourse.Slug || createdCourse.ID}`);
+      }
+    } catch (error) {
+      // setServerError(error.message || "Произошла ошибка при создании курса");
+      console.error(error);
     } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-indigo-950 via-purple-900 to-indigo-900">
-      {/* Фоновые blob'ы */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="absolute top-0 -left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-        <div className="absolute top-1/3 -right-20 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-20 left-1/4 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900">
+      <AnimatedGradientBackground />
 
-      <div className="relative z-10 container mx-auto px-6 py-12 max-w-4xl">
-        {/* Заголовок */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-linear-to-br from-indigo-500 to-purple-600 shadow-2xl mb-6">
-            <BookOpen className="w-10 h-10 text-white" />
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Хедер */}
+        <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/courses"
+              className="flex items-center gap-2 text-indigo-300 hover:text-indigo-200 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Назад к курсам</span>
+            </Link>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
-            Создать новый курс
-          </h1>
-          <p className="text-xl text-indigo-200/80 max-w-2xl mx-auto">
-            Заполните основную информацию — курс будет готов к публикации за
-            несколько минут
-          </p>
-        </div>
 
-        {/* Основная форма */}
-        <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-          <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
-            {/* Обложка курса */}
-            <div className="space-y-4">
-              <label className="block text-lg font-semibold text-white/90">
-                Обложка курса
-              </label>
-
-              <div
-                className={`
-                relative aspect-video rounded-2xl overflow-hidden border-2 border-dashed
-                ${coverPreview ? "border-indigo-400/50" : "border-white/20 hover:border-white/40"}
-                transition-all duration-300 group cursor-pointer bg-white/5 backdrop-blur-sm
-              `}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                />
-
-                {coverPreview ? (
-                  <>
-                    <Image
-                      src={coverPreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="text-white text-center">
-                        <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-                        <p className="text-lg font-medium">Изменить обложку</p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white/60 group-hover:text-white/90 transition-colors">
-                    <Upload className="w-16 h-16 mb-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                    <p className="text-lg font-medium mb-2">
-                      Перетащите изображение или кликните
-                    </p>
-                    <p className="text-sm">Рекомендуемый размер: 1280×720</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Название */}
-            <div className="space-y-3">
-              <label
-                htmlFor="title"
-                className="block text-lg font-semibold text-white/90"
-              >
-                Название курса
-              </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например: React & TypeScript — от новичка до профи"
-                required
-                className="w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all text-lg"
-              />
-            </div>
-
-            {/* Slug */}
-            <div className="space-y-3">
-              <label
-                htmlFor="slug"
-                className="block text-lg font-semibold text-white/90"
-              >
-                Slug (URL-адрес курса)
-              </label>
-              <div className="flex items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-400/50 transition-all">
-                <span className="px-5 py-4 text-white/60">
-                  handbooks.com/courses/
-                </span>
-                <input
-                  id="slug"
-                  type="text"
-                  value={slug}
-                  onChange={(e) =>
-                    setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))
-                  }
-                  placeholder="react-typescript-pro"
-                  required
-                  className="flex-1 px-4 py-4 bg-transparent text-white placeholder-white/40 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Описание */}
-            <div className="space-y-3">
-              <label
-                htmlFor="description"
-                className="block text-lg font-semibold text-white/90"
-              >
-                Краткое описание
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Расскажите, что получит студент после прохождения курса..."
-                rows={5}
-                required
-                className="w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all resize-none"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label
-                htmlFor="level"
-                className="block text-lg font-semibold text-white/90"
-              >
-                Уровень сложности
-              </label>
-              <select
-                id="level"
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all appearance-none"
-              >
-                <option value="beginner">Начинающий</option>
-                <option value="intermediate">Средний</option>
-                <option value="advanced">Продвинутый</option>
-              </select>
-            </div>
-
-            {/* Уровень и цена (в одной строке) */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <label
-                  htmlFor="level"
-                  className="block text-lg font-semibold text-white/90"
-                >
-                  Курс денег
-                </label>
-                <select
-                  id="currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all appearance-none"
-                >
-                  <option value="usd">USD</option>
-                  <option value="rub">RUB</option>
-                </select>
-              </div>
-
-              <div className="space-y-3">
-                <label
-                  htmlFor="price"
-                  className="block text-lg font-semibold text-white/90"
-                >
-                  Цена (в €)
-                </label>
-                <input
-                  id="price"
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0 — бесплатно"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Ошибка */}
-            {error && (
-              <div className="bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-100 px-6 py-4 rounded-xl text-center">
-                {error}
-              </div>
-            )}
-
-            {/* Кнопки */}
-            <div className="flex flex-col sm:flex-row gap-6 pt-6">
+          <div className="flex items-center gap-3">
+            <span className="text-indigo-300 text-sm hidden sm:block">
+              Шаг {step} из 2
+            </span>
+            <button
+              onClick={() => setStep(step - 1)}
+              disabled={step === 1}
+              className="px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/15 transition"
+            >
+              Назад
+            </button>
+            {step === 2 ? (
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="flex-1 py-5 px-8 bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                form="course-form"
+                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white font-semibold hover:from-indigo-500 hover:to-purple-500 hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center gap-2"
               >
-                {isSubmitting ? (
-                  <>
-                    <svg
-                      className="animate-spin h-6 w-6 text-white"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    Создание...
-                  </>
-                ) : (
-                  <>
-                    Создать курс
-                    <ArrowRight className="w-6 h-6" />
-                  </>
-                )}
+                <Save className="w-5 h-5" />
+                Создать курс
               </button>
-
-              <a
-                href="/dashboard"
-                className="flex-1 py-5 px-8 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-3"
+            ) : (
+              <button
+                onClick={() => setStep(2)}
+                disabled={!formData.title || !formData.slug}
+                className="px-6 py-2.5 bg-indigo-600 rounded-xl text-white font-semibold hover:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <X className="w-6 h-6" />
-                Отмена
-              </a>
+                Продолжить
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Основной контент */}
+        <main className="flex-1 p-6 lg:p-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-12 text-center md:text-left">
+              <div className="inline-flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <BookOpen className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white">
+                  Создание нового курса
+                </h1>
+              </div>
+              <p className="text-indigo-200/80 text-lg">
+                Заполните информацию, чтобы ваш курс появился в каталоге
+              </p>
             </div>
-          </form>
-        </div>
 
-        {/* Подсказка */}
-        <p className="text-center text-white/50 text-sm mt-10">
-          После создания курса вы сможете добавить уроки, тесты и материалы
-        </p>
+            <form
+              id="course-form"
+              onSubmit={handleSubmit}
+              className="space-y-12"
+            >
+              {/* Шаг 1: Основная информация */}
+              {step === 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-white/90 font-medium mb-2">
+                        Название курса *
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        placeholder="Например: Полный курс по React и Next.js 2026"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white/90 font-medium mb-2">
+                        Подзаголовок
+                      </label>
+                      <input
+                        type="text"
+                        name="subtitle"
+                        value={formData.subtitle || ""}
+                        onChange={handleChange}
+                        className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        placeholder="Короткое описание, которое зацепит студента"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white/90 font-medium mb-2">
+                        Уровень сложности
+                      </label>
+                      <select
+                        name="level"
+                        value={formData.level}
+                        onChange={handleChange}
+                        className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                      >
+                        <option value="beginner">Начинающий</option>
+                        <option value="intermediate">Средний</option>
+                        <option value="advanced">Продвинутый</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-white/90 font-medium mb-2">
+                        Slug (URL-адрес) *
+                      </label>
+                      <input
+                        type="text"
+                        name="slug"
+                        value={formData.slug}
+                        onChange={handleChange}
+                        required
+                        pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                        className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        placeholder="react-nextjs-2026"
+                      />
+                      <p className="mt-1.5 text-xs text-indigo-300/70">
+                        Только строчные буквы, цифры и дефисы
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-white/90 font-medium mb-2">
+                          Цена
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleChange}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-white/90 font-medium mb-2">
+                          Валюта
+                        </label>
+                        <select
+                          name="currency"
+                          value={formData.currency}
+                          onChange={handleChange}
+                          className="w-full px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        >
+                          <option value="EUR">EUR</option>
+                          <option value="USD">USD</option>
+                          <option value="RUB">RUB</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Шаг 2: Обложка + описание */}
+              {step === 2 && (
+                <div className="space-y-12">
+                  {/* Загрузка обложки */}
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-10">
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                      Обложка курса
+                    </h2>
+
+                    <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                      <div
+                        className="w-full md:w-80 aspect-video rounded-2xl overflow-hidden border-2 border-dashed border-white/20 flex items-center justify-center relative group cursor-pointer hover:border-indigo-500/50 transition"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {formData.coverPreview ? (
+                          <img
+                            src={formData.coverPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center p-8">
+                            <Upload className="w-12 h-12 text-white/40 mx-auto mb-4" />
+                            <p className="text-white/70">
+                              Нажмите или перетащите изображение
+                            </p>
+                            <p className="text-sm text-white/50 mt-2">
+                              Рекомендуемый размер: 1920×1080
+                            </p>
+                          </div>
+                        )}
+
+                        {formData.coverPreview && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData((prev) => ({
+                                ...prev,
+                                coverPreview: null,
+                              }));
+                            }}
+                            className="absolute top-3 right-3 bg-red-600/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverChange}
+                          className="hidden"
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <p className="text-indigo-200 mb-4">
+                          Красивая обложка значительно повышает кликабельность
+                          курса.
+                        </p>
+                        <ul className="space-y-2 text-sm text-indigo-200/80">
+                          <li>• Формат: JPG, PNG, WebP</li>
+                          <li>• Размер до 5 МБ</li>
+                          <li>• Соотношение 16:9</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Краткое описание (можно расширить до full editor позже) */}
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-10">
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                      Краткое описание
+                    </h2>
+                    <textarea
+                      name="description"
+                      // value={formData.description || ""}
+                      // onChange={handleChange}
+                      rows={6}
+                      className="w-full px-5 py-4 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/30 transition resize-none"
+                      placeholder="Расскажите, что получит студент после прохождения курса..."
+                    />
+                  </div>
+                </div>
+              )}
+            </form>
+          </div>
+        </main>
       </div>
-
-      {/* Анимации */}
-      <style jsx global>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(80px, -60px) scale(1.15);
-          }
-          66% {
-            transform: translate(-60px, 80px) scale(0.95);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 18s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 }
