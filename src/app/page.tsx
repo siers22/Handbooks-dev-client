@@ -1,23 +1,11 @@
 // app/page.tsx
 "use client";
 
-import Link from "next/link";
-
-import {
-  BookOpen,
-  ArrowRight,
-  Users,
-  Clock,
-  Award,
-  PlayCircle,
-} from "lucide-react";
 import Header from "@/components/header";
-import BlueLinkButton from "@/components/buttons/blue-link-button";
-import GrayLinkButton from "@/components/buttons/gray-link-button";
 import BackgroundBlobs from "@/components/layout/BackgroundBlobs";
-import HeroSection from "@/components/sections/HeroSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import FooterSection from "@/components/sections/FooterSection";
+import HeroSection from "@/components/sections/HeroSection";
 
 export default function HomePage() {
   return (
