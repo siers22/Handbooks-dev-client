@@ -1,54 +1,61 @@
 // app/dashboard/page.tsx
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import {
-  BookOpen,
-  LayoutDashboard,
-  ListChecks,
-  Trophy,
-  Settings,
-  LogOut,
-  ChevronRight,
-  Search,
-  Bell,
-  User,
-} from "lucide-react";
-import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground";
-import NavbarSection from "@/components/sections/NavbarSection";
 import CoursesGrid from "@/components/content/CoursesGrid";
+import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground";
 
-// Пример данных (в реальности — из API)
+import { Bell, BookOpen, Search } from "lucide-react";
+// import { cookies } from "next/headers";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getUserData } from "./getUserData";
+import NavbarSection from "@/components/layout/NavbarSection";
 
+interface User {
+  ID: string;
+  Email: string;
+  FullName: string;
+  AvatarURL: string;
+  Role: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LastLoginAt: string | null;
+}
+type Response = {
+  data: User;
+  requestID: string;
+  status: number;
+  success: boolean;
+};
+interface UserDataResponse {
+  data: {
+    user: User;
+  };
+}
 export default function DashboardPage() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    getUserData()
+      .then((response: UserDataResponse) => {
+        console.log("Полученные данные:", response);
+        setUserData(response.data.user); // вот тут важно!
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900">
       <AnimatedGradientBackground />
 
       <div className="relative z-10 flex min-h-screen">
-        <aside
-          className={`
-          fixed inset-y-0 left-0 z-50 w-72 bg-white/5 backdrop-blur-xl border-r border-white/10
-          transform transition-transform duration-300 lg:relative lg:translate-x-0
-          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
-        >
-          <div className="flex flex-col h-full">
-            <div className="p-6 border-b border-white/10">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                  <BookOpen className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-white">Handbooks</span>
-              </Link>
-            </div>
-
-            <NavbarSection />
-          </div>
-        </aside>
+        <NavbarSection />
 
         {isMobileMenuOpen && (
           <div
@@ -92,12 +99,12 @@ export default function DashboardPage() {
                 <button className="relative text-white/80 hover:text-white transition-colors">
                   <Bell className="w-6 h-6" />
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center">
-                    3
+                    1488
                   </span>
                 </button>
 
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
-                  A
+                  {userData?.FullName[0] || "Гость"}
                 </div>
               </div>
             </div>
@@ -109,7 +116,8 @@ export default function DashboardPage() {
               {/* Приветствие */}
               <div className="mb-12">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-                  Добро пожаловать, Artem!
+                  Добро пожаловать, {userData?.FullName || "Гость"}
+                  <p></p>
                 </h1>
                 <p className="text-indigo-200/80 text-lg">
                   Продолжайте обучение или откройте что-то новое

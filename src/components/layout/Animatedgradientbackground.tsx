@@ -1,3 +1,4 @@
+// components/layout/Animatedgradientbackground.tsx
 export default function AnimatedGradientBackground() {
   return (
     <div className="absolute inset-0 bg-linear-to-br from-indigo-950 via-purple-900 to-indigo-900">

@@ -45,7 +45,7 @@ export default async function CourseDetailPage({
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg2MGZhMTc5LTViODktNGJiNi05NzFiLWMxZTBkZGM5MGVjNyIsImVtYWlsIjoiVXJzdWxhX1N0cm9zaW4yNUB5YWhvby5jb20iLCJyb2xlIjoiIiwidG9rZW5faWQiOiIzMjMwMzIzNjJkMzAzMTJkMzIzNDIwMzEzNjNhMzUzMzNhMzUzNzJlMzczMzMwMzIzOTM2MzUzNjM3MjAyYjMwMzUzMDMwMjAyYjMwMzUyMDZkM2QyYjM0MzcyZTMwMzczOTM0MzYzMDM5MzgzNzM4MzYzMDY2NjEzMTM3MzkyZDM1NjIzODM5MmQzNDYyNjIzNjJkMzkzNzMxNjIyZDYzMzE2NTMwNjQ2NDYzMzkzMDY1NjMzNyIsImlzcyI6ImhhbmRib29rcy1hcGkiLCJzdWIiOiI4NjBmYTE3OS01Yjg5LTRiYjYtOTcxYi1jMWUwZGRjOTBlYzciLCJleHAiOjE3NjkzNDIwMzcsImlhdCI6MTc2OTI1NTYzN30.yjE8fuY7OLGmQxFoiZma5UjWlNzkV0mPPZgsc_nHOeM`,
+        Authorization: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUyYjA5MWZhLWI2YTUtNDc2MS05MjVjLWYxZTdkZDBlZDQ4NCIsImVtYWlsIjoiQ3VydF9SaWNlQGhvdG1haWwuY29tIiwicm9sZSI6IiIsInRva2VuX2lkIjoiMzIzMDMyMzYyZDMwMzEyZDMyMzQyMDMxMzQzYTMyMzkzYTMxMzgyZTM5MzQzMzMyMzYzOTMyMzkzMzIwMmIzMDMwMzAzMDIwNTU1NDQzMjA2ZDNkMmIzMTMwMmUzMjM2MzEzMjM1MzczMjM2MzQzNTMyNjIzMDM5MzE2NjYxMmQ2MjM2NjEzNTJkMzQzNzM2MzEyZDM5MzIzNTYzMmQ2NjMxNjUzNzY0NjQzMDY1NjQzNDM4MzQiLCJpc3MiOiJoYW5kYm9va3MtYXBpIiwic3ViIjoiNTJiMDkxZmEtYjZhNS00NzYxLTkyNWMtZjFlN2RkMGVkNDg0IiwiZXhwIjoxNzY5MzUxMzU4LCJpYXQiOjE3NjkyNjQ5NTh9.5B6YnHkQl9Fus-oe6AvpOo1xmJib5f343KNEL2xvJYs`,
       },
       next: { revalidate: 60 }, // кэш на 1 минуту — курс может обновляться
       // cache: 'no-store' // для отладки

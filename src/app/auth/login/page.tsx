@@ -5,11 +5,18 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground";
+import { createSession } from "@/lib/session";
 
 type LoginResponse = {
   success: number;
-  type: unknown;
-  data: unknown;
+  status: number;
+  data: {
+    auth: {
+      access_token: string;
+      expires_in: number;
+    };
+  };
+  requestID: string;
 };
 
 const loginUser = async ({
@@ -46,8 +53,11 @@ export default function LoginPage() {
 
   const mutation = useMutation({
     mutationFn: loginUser,
-    onSuccess: () => {
-      router.push("/");
+    onSuccess: async (resp) => {
+      const token = resp.data.auth.access_token;
+      const expires_in = resp.data.auth.expires_in;
+      await createSession(token, expires_in);
+      router.push("/home");
     },
     onError: (error) => {
       setServerError(
