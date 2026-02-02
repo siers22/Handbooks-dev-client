@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Search, Bell } from "lucide-react";
 import AnimatedGradientBackground from "@/components/layout/Animatedgradientbackground"; // твой компонент
-import NavbarSection from "@/components/sections/NavbarSection";
+import NavbarSection from "@/components/layout/NavbarSection";
 
 type Course = {
   ID: string;
@@ -49,36 +49,30 @@ export default async function CoursesPage() {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {/* Хедер — как в dashboard */}
-        <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/home" className="text-white text-xl font-bold">
-              Handbooks
-            </Link>
-          </div>
+        <NavbarSection />
 
-          <div className="flex-1 max-w-2xl mx-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-              <input
-                type="text"
-                placeholder="Поиск курсов, тем или инструкторов..."
-                className="w-full pl-11 pr-4 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 transition-all"
-              />
-            </div>
+        <div className="flex-1 max-w-2xl mx-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+            <input
+              type="text"
+              placeholder="Поиск курсов, тем или инструкторов..."
+              className="w-full pl-11 pr-4 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 transition-all"
+            />
           </div>
+        </div>
 
-          <div className="flex items-center gap-6">
-            <button className="relative text-white/80 hover:text-white transition">
-              <Bell className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center">
-                2
-              </span>
-            </button>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
-              A
-            </div>
+        <div className="flex items-center gap-6">
+          <button className="relative text-white/80 hover:text-white transition">
+            <Bell className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center">
+              2
+            </span>
+          </button>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+            A
           </div>
-        </header>
+        </div>
 
         {/* Основной контент */}
         <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
